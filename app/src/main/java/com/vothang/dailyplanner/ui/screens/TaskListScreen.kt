@@ -8,21 +8,20 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.vothang.dailyplanner.model.Task
 import com.vothang.dailyplanner.ui.components.TaskItem
+import com.vothang.dailyplanner.viewmodel.TaskViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel // Import quan trọng để dùng viewModel()
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TaskListScreen() {
-    // Dữ liệu hardcore vào 5 tasks
-    val tasks = listOf(
-        Task("1", "Học Jetpack Compose cơ bản", isDone = true),
-        Task("2", "Tạo giao diện TaskItem", isDone = true),
-        Task("3", "Tạo màn hình TaskListScreen", note = "Dùng LazyColumn"),
-        Task("4", "Cấu hình Theme cho App"),
-        Task("5", "Chạy thử trên Emulator", note = "Kiểm tra hiển thị")
-    )
+fun TaskListScreen(
+    viewModel: TaskViewModel = viewModel()
+) {
+    val tasks by viewModel.tasks.collectAsState()
 
     Scaffold(
         topBar = {
@@ -33,7 +32,10 @@ fun TaskListScreen() {
             items(tasks) { task ->
                 TaskItem(
                     task = task,
-                    onCheckedChange = { /* Sẽ xử lý sau*/ }
+                    onCheckedChange = { isChecked ->
+                        // Báo cáo sự kiện ngược lên ViewModel (Hoist state)
+                        viewModel.onTaskCheckedChange(task.id, isChecked)
+                    }
                 )
             }
         }
