@@ -1,6 +1,6 @@
 package com.vothang.dailyplanner.model
 
 data class TaskList (
-    val id: Int,
+    val id: String,
     val name: String
 )

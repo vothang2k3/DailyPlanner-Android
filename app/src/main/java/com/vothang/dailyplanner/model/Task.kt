@@ -1,10 +1,10 @@
 package com.vothang.dailyplanner.model
 
 data class Task(
-    val id: Int,
+    val id: String,
     val title: String,
-    val isDone: Boolean,
-    val note : String?,
-    val deadline: Long?,
-    val listId: Int
+    val isDone: Boolean = false,
+    val note: String = "",
+    val deadline: Long? = null,
+    val listId: Int = 0
 )

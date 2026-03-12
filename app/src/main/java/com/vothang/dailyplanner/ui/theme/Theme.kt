@@ -29,7 +29,7 @@ private val LightColorScheme = lightColorScheme(
 fun DailyPlannerTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = false, // Tắt dynamic color để dùng màu custom
+    dynamicColor: Boolean = true, // Tắt dynamic color để dùng màu custom
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
