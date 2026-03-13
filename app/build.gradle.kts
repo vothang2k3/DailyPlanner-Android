@@ -1,7 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.kotlin.serialization) // <-- Thêm dòng này để kích hoạt Plugin
+    alias(libs.plugins.kotlin.serialization)
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -71,4 +72,9 @@ dependencies {
     /* Serialization */
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
 
+    /* Room Database */
+    implementation("androidx.room:room-runtime:2.7.0")
+    implementation("androidx.room:room-ktx:2.7.0")
+
+    ksp("androidx.room:room-compiler:2.7.0")
 }
