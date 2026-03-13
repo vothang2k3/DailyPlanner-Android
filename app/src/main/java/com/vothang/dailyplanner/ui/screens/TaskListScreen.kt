@@ -30,7 +30,7 @@ fun TaskListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Daily Paln") }
+                title = { Text("Daily Plan") }
             )
         }
     ) { innerPadding ->
