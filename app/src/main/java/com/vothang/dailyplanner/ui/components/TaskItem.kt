@@ -1,5 +1,6 @@
 package com.vothang.dailyplanner.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,41 +14,51 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.vothang.dailyplanner.model.Task
 import androidx.compose.ui.unit.dp
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 
+// Compose nhận state và 2 callback, không dữ state - chỉ hiển thị
 @Composable
 fun TaskItem(
     task: Task,
-    onCheckedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    onToggleDone: (Task) -> Unit,
+    onClickItem: (Task) -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .clickable { onClickItem(task) }
+            .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Checkbox(
             checked = task.isDone,
-            onCheckedChange = onCheckedChange
+            onCheckedChange = { onToggleDone(task) }
         )
 
-        Spacer(modifier = Modifier.width(12.dp))
-        Column {
-            Text(text = task.title, style = MaterialTheme.typography.bodyLarge)
-            if(!task.note.isNullOrEmpty()) {
-                Text(text = task.note, style = MaterialTheme.typography.bodySmall)
+        Column (
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 8.dp)
+        ) {
+            Text(
+                text = task.title,
+                style = MaterialTheme.typography.bodyLarge
+            )
+
+
+            if(task.deadline != null) {
+                val formatted = SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN"))
+                    .format(Date(task.deadline))
+                Text(
+                    text = formatted,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun TaskItemPreview() {
-    TaskItem(
-        task = Task(id = "1", title = "Học Jetpack Compose", note = "Hoàn thành bài tập ngày 3"),
-        onCheckedChange = {}
-    )
 }
 
