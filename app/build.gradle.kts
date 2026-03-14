@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     id("com.google.devtools.ksp")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -77,4 +78,7 @@ dependencies {
     implementation("androidx.room:room-ktx:2.7.0")
 
     ksp("androidx.room:room-compiler:2.7.0")
+
+    implementation("com.google.dagger:hilt-android:2.59.2")
+    ksp("com.google.dagger:hilt-android-compiler:2.57.1")
 }
