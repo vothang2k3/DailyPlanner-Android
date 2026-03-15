@@ -14,16 +14,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.vothang.dailyplanner.model.Task
 import com.vothang.dailyplanner.ui.components.TaskItem
 import com.vothang.dailyplanner.viewmodel.TaskViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel // Import quan trọng để dùng viewModel()
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskListScreen(
-    taskViewModel: TaskViewModel = viewModel()
+    taskViewModel: TaskViewModel = hiltViewModel()
 ) {
     val tasks by taskViewModel.tasks.collectAsState()
 

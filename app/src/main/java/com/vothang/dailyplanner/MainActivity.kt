@@ -17,8 +17,10 @@ import com.vothang.dailyplanner.ui.navigation.NavGraph
 import com.vothang.dailyplanner.ui.navigation.TaskList
 import com.vothang.dailyplanner.ui.screens.TaskListScreen
 import com.vothang.dailyplanner.ui.theme.DailyPlannerTheme
+import dagger.hilt.android.AndroidEntryPoint
 
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

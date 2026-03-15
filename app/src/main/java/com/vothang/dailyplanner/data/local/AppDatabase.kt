@@ -4,7 +4,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [TaskDao::class, TaskListDao::class],
+    entities = [TaskEntity::class, TaskListEntity::class],
     version = 1,
     exportSchema = false
 )
