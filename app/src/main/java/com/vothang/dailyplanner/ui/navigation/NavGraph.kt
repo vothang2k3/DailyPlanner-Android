@@ -24,12 +24,11 @@ fun NavGraph(backStack : NavBackStack<NavKey>) {
         ),
         entryProvider = entryProvider {
             entry<TaskList> {
-                TaskListScreen()
+                TaskListScreen(backStack = backStack)
             }
 
-            entry<AddTask> {
-                /* Xử lý sau */
-                AddEditTaskScreen()
+            entry<AddTask> { screen ->
+                AddEditTaskScreen(listId = screen.listId)
             }
 
             entry<TaskDetail> { screen ->

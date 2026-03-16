@@ -10,13 +10,18 @@ import androidx.compose.material3.Text
 
 @Composable
 fun AddEditTaskScreen(
+    listId: Int? = null,
     taskId: Int? = null
 ) {
     Box(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center
     ) {
-        val label = if (taskId == null) "thêm task" else "sửa task $taskId"
+        val label = when {
+            taskId != null -> "Sửa task $taskId"
+            listId != null -> "Sửa list $listId"
+            else -> "Thêm task"
+        }
         Text(text = label)
     }
 }

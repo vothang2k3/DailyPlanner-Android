@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 object TaskList : NavKey
 
 @Serializable
-object AddTask : NavKey
+data class AddTask(val listId: Int) : NavKey
 
 @Serializable
 data class TaskDetail(val taskId: Int) : NavKey
