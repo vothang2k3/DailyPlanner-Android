@@ -49,6 +49,7 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.vothang.dailyplanner.model.Task
 import com.vothang.dailyplanner.ui.components.AddListDialog
+import com.vothang.dailyplanner.ui.components.EmptyTaskView
 import com.vothang.dailyplanner.ui.components.TaskItem
 import com.vothang.dailyplanner.ui.navigation.AddTask
 import com.vothang.dailyplanner.ui.navigation.TaskDetail
@@ -141,81 +142,72 @@ fun TaskListScreen(
                     }
                 }
 
+// Trong HorizontalPager, thay LazyColumn cũ bằng:
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize()
                 ) { page ->
                     val currentListId = lists[page].id
                     val pageTasks = tasks.filter { it.listId == currentListId }
-
-                    // Tách 2 section: chưa xong và đã hoàn thành
                     val (doneTasks, pendingTasks) = pageTasks.partition { it.isDone }
-
-                    // Sort task chưa xong theo deadline tăng dần, null deadline xuống cuối
-                    val sortedPending = pendingTasks.sortedWith(
-                        compareBy(nullsLast()) { it.deadline }
-                    )
-
-                    // State ẩn/hiện section "Đã hoàn thành"
+                    val sortedPending = pendingTasks.sortedWith(compareBy(nullsLast()) { it.deadline })
                     var showDoneSection by remember { mutableStateOf(true) }
 
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        // Section task chưa xong
-                        items(
-                            items = sortedPending,
-                            key = { task -> task.id }
-                        ) { task ->
-                            SwipeToDeleteItem(
-                                onDelete = { taskViewModel.delete(task) }
-                            ) {
-                                TaskItem(
-                                    task = task,
-                                    onToggleDone = { taskViewModel.toggleDone(it) },
-                                    onClickItem = { backStack.add(TaskDetail(it.id)) }
-                                )
-                            }
-                        }
-
-                        // Header section "Đã hoàn thành" — chỉ hiện khi có task done
-                        if (doneTasks.isNotEmpty()) {
-                            item {
-                                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { showDoneSection = !showDoneSection }
-                                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Đã hoàn thành (${doneTasks.size})",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    Icon(
-                                        imageVector = if (showDoneSection)
-                                            Icons.Default.KeyboardArrowUp
-                                        else
-                                            Icons.Default.KeyboardArrowDown,
-                                        contentDescription = null
+                    if (pageTasks.isEmpty()) {
+                        // Hiện EmptyTaskView khi chưa có task nào trong list này
+                        EmptyTaskView()
+                    } else {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            items(
+                                items = sortedPending,
+                                key = { task -> task.id }
+                            ) { task ->
+                                SwipeToDeleteItem(onDelete = { taskViewModel.delete(task) }) {
+                                    TaskItem(
+                                        task = task,
+                                        onToggleDone = { taskViewModel.toggleDone(it) },
+                                        onClickItem = { backStack.add(TaskDetail(it.id)) }
                                     )
                                 }
                             }
 
-                            // AnimatedVisibility bọc từng item riêng lẻ vì LazyColumn không hỗ trợ bọc cả group
-                            items(
-                                items = doneTasks,
-                                key = { task -> "done_${task.id}" }
-                            ) { task ->
-                                AnimatedVisibility(visible = showDoneSection) {
-                                    SwipeToDeleteItem(
-                                        onDelete = { taskViewModel.delete(task) }
+                            if (doneTasks.isNotEmpty()) {
+                                item {
+                                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable { showDoneSection = !showDoneSection }
+                                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        TaskItem(
-                                            task = task,
-                                            onToggleDone = { taskViewModel.toggleDone(it) },
-                                            onClickItem = { backStack.add(TaskDetail(it.id)) }
+                                        Text(
+                                            text = "Đã hoàn thành (${doneTasks.size})",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            modifier = Modifier.weight(1f)
                                         )
+                                        Icon(
+                                            imageVector = if (showDoneSection)
+                                                Icons.Default.KeyboardArrowUp
+                                            else
+                                                Icons.Default.KeyboardArrowDown,
+                                            contentDescription = null
+                                        )
+                                    }
+                                }
+
+                                items(
+                                    items = doneTasks,
+                                    key = { task -> "done_${task.id}" }
+                                ) { task ->
+                                    AnimatedVisibility(visible = showDoneSection) {
+                                        SwipeToDeleteItem(onDelete = { taskViewModel.delete(task) }) {
+                                            TaskItem(
+                                                task = task,
+                                                onToggleDone = { taskViewModel.toggleDone(it) },
+                                                onClickItem = { backStack.add(TaskDetail(it.id)) }
+                                            )
+                                        }
                                     }
                                 }
                             }

@@ -1,9 +1,8 @@
 package com.vothang.dailyplanner.ui.screens
 
-import android.R.attr.navigationIcon
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,14 +15,15 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -35,10 +35,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
+import com.vothang.dailyplanner.service.AlarmScheduler
 import com.vothang.dailyplanner.ui.components.DatePickerButton
-import com.vothang.dailyplanner.viewmodel.AddEditTaskVIewModel
+import com.vothang.dailyplanner.viewmodel.AddEditTaskViewModel
 import com.vothang.dailyplanner.viewmodel.TaskViewModel
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,7 +46,7 @@ fun AddEditTaskScreen(
     listId: Int? = null,
     taskId: Int? = null,
     backStack: NavBackStack<NavKey>,
-    addEditViewModel: AddEditTaskVIewModel = hiltViewModel(),
+    addEditViewModel: AddEditTaskViewModel = hiltViewModel(),
     taskViewModel: TaskViewModel = hiltViewModel()
 ) {
     LaunchedEffect(taskId, listId) {
@@ -62,12 +62,12 @@ fun AddEditTaskScreen(
     val note by addEditViewModel.note.collectAsState()
     val selectedListId by addEditViewModel.listId.collectAsState()
     val deadline by addEditViewModel.deadline.collectAsState()
+    val isReminderOn by addEditViewModel.isReminderOn.collectAsState()
     val lists by addEditViewModel.lists.collectAsState()
 
     var showTitleError by remember { mutableStateOf(false) }
     var dropdownExpanded by remember { mutableStateOf(false) }
     val selectedListName = lists.find { it.id == selectedListId }?.name ?: "Chọn danh sách"
-
     val screenTitle = if (taskId != null) "Sửa task" else "Thêm task"
 
     Scaffold(
@@ -146,17 +146,47 @@ fun AddEditTaskScreen(
                 }
             }
 
-            // Chọn deadline
             DatePickerButton(
                 selectedTimestamp = deadline,
                 onDateSelected = { addEditViewModel.onDeadlineChange(it) }
             )
 
+            // Switch nhắc nhở — chỉ có tác dụng khi đã chọn deadline
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Nhắc nhở",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
+                    checked = isReminderOn,
+                    onCheckedChange = { addEditViewModel.onReminderChange(it) },
+                    // Disable nếu chưa chọn deadline
+                    enabled = deadline != null
+                )
+            }
+
+            if (isReminderOn && deadline == null) {
+                Text(
+                    text = "Chọn deadline để bật nhắc nhở",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
             Button(
                 onClick = {
                     showTitleError = true
-                    val saved = addEditViewModel.saveTask()
-                    if (saved) backStack.removeLastOrNull()
+                    val savedTask = addEditViewModel.saveTask()
+                    if (savedTask != null) {
+                        if (isReminderOn && savedTask.deadline != null) {
+                            addEditViewModel.scheduleReminder(savedTask)
+                        }
+                        backStack.removeLastOrNull()
+                    }
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -165,8 +195,6 @@ fun AddEditTaskScreen(
         }
     }
 }
-
-
 
 
 
