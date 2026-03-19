@@ -1,9 +1,14 @@
 package com.vothang.dailyplanner.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,15 +16,23 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -38,6 +51,7 @@ import com.vothang.dailyplanner.model.Task
 import com.vothang.dailyplanner.ui.components.AddListDialog
 import com.vothang.dailyplanner.ui.components.TaskItem
 import com.vothang.dailyplanner.ui.navigation.AddTask
+import com.vothang.dailyplanner.ui.navigation.TaskDetail
 import com.vothang.dailyplanner.viewmodel.TaskListViewModel
 import com.vothang.dailyplanner.viewmodel.TaskViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -48,7 +62,7 @@ import kotlinx.coroutines.launch
 fun TaskListScreen(
     backStack: NavBackStack<NavKey>,
     taskViewModel: TaskViewModel = hiltViewModel(),
-    taskListViewModel: TaskListViewModel= hiltViewModel(),
+    taskListViewModel: TaskListViewModel = hiltViewModel()
 ) {
     val tasks by taskViewModel.tasks.collectAsState()
     val lists by taskListViewModel.lists.collectAsState()
@@ -57,23 +71,19 @@ fun TaskListScreen(
     val coroutineScope = rememberCoroutineScope()
     var showAddListDialog by remember { mutableStateOf(false) }
 
-    // LaunchedEffect quan sát lists.size thay đổi thì scroll đến trang cuối
     LaunchedEffect(lists.size) {
         if (lists.isNotEmpty()) {
             pagerState.animateScrollToPage(lists.lastIndex)
         }
     }
 
-    // Xử lý hộp thoại thêm danh sách
     if (showAddListDialog) {
         AddListDialog(
             onConfirm = { name ->
                 taskListViewModel.insertList(name)
                 showAddListDialog = false
             },
-            onDismiss = {
-                showAddListDialog = false
-            }
+            onDismiss = { showAddListDialog = false }
         )
     }
 
@@ -82,7 +92,6 @@ fun TaskListScreen(
             TopAppBar(
                 title = { Text("Daily Plan") },
                 actions = {
-                    // Nút + luôn hiển thị trên TopAppBar để thêm list mới
                     IconButton(onClick = { showAddListDialog = true }) {
                         Icon(Icons.Default.Add, contentDescription = "Thêm danh sách")
                     }
@@ -139,20 +148,122 @@ fun TaskListScreen(
                     val currentListId = lists[page].id
                     val pageTasks = tasks.filter { it.listId == currentListId }
 
+                    // Tách 2 section: chưa xong và đã hoàn thành
+                    val (doneTasks, pendingTasks) = pageTasks.partition { it.isDone }
+
+                    // Sort task chưa xong theo deadline tăng dần, null deadline xuống cuối
+                    val sortedPending = pendingTasks.sortedWith(
+                        compareBy(nullsLast()) { it.deadline }
+                    )
+
+                    // State ẩn/hiện section "Đã hoàn thành"
+                    var showDoneSection by remember { mutableStateOf(true) }
+
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        // Section task chưa xong
                         items(
-                            items = pageTasks,
+                            items = sortedPending,
                             key = { task -> task.id }
                         ) { task ->
-                            TaskItem(
-                                task = task,
-                                onToggleDone = { taskViewModel.toggleDone(it) },
-                                onClickItem = { /* Ngày 10 */ }
-                            )
+                            SwipeToDeleteItem(
+                                onDelete = { taskViewModel.delete(task) }
+                            ) {
+                                TaskItem(
+                                    task = task,
+                                    onToggleDone = { taskViewModel.toggleDone(it) },
+                                    onClickItem = { backStack.add(TaskDetail(it.id)) }
+                                )
+                            }
+                        }
+
+                        // Header section "Đã hoàn thành" — chỉ hiện khi có task done
+                        if (doneTasks.isNotEmpty()) {
+                            item {
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { showDoneSection = !showDoneSection }
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Đã hoàn thành (${doneTasks.size})",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Icon(
+                                        imageVector = if (showDoneSection)
+                                            Icons.Default.KeyboardArrowUp
+                                        else
+                                            Icons.Default.KeyboardArrowDown,
+                                        contentDescription = null
+                                    )
+                                }
+                            }
+
+                            // AnimatedVisibility bọc từng item riêng lẻ vì LazyColumn không hỗ trợ bọc cả group
+                            items(
+                                items = doneTasks,
+                                key = { task -> "done_${task.id}" }
+                            ) { task ->
+                                AnimatedVisibility(visible = showDoneSection) {
+                                    SwipeToDeleteItem(
+                                        onDelete = { taskViewModel.delete(task) }
+                                    ) {
+                                        TaskItem(
+                                            task = task,
+                                            onToggleDone = { taskViewModel.toggleDone(it) },
+                                            onClickItem = { backStack.add(TaskDetail(it.id)) }
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+// Tách riêng để tránh lặp code SwipeToDismiss
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SwipeToDeleteItem(
+    onDelete: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) {
+                onDelete()
+                true
+            } else false
+        }
+    )
+
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = false,
+        backgroundContent = {
+            if (dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.errorContainer)
+                        .padding(end = 16.dp),
+                    contentAlignment = Alignment.CenterEnd
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Xoá",
+                        tint = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+        }
+    ) {
+        content()
     }
 }

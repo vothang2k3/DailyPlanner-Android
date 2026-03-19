@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import com.vothang.dailyplanner.model.Task
 import androidx.compose.ui.unit.dp
@@ -26,6 +27,9 @@ fun TaskItem(
     onToggleDone: (Task) -> Unit,
     onClickItem: (Task) -> Unit
 ) {
+    val now = System.currentTimeMillis()
+    val isOverdue = task.deadline != null && task.deadline < now && !task.isDone
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -45,7 +49,14 @@ fun TaskItem(
         ) {
             Text(
                 text = task.title,
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    textDecoration = if(task.isDone) TextDecoration.LineThrough else TextDecoration.None
+                ),
+                color = if (task.isDone) {
+                    MaterialTheme.colorScheme.surfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                }
             )
 
 
@@ -55,7 +66,11 @@ fun TaskItem(
                 Text(
                     text = formatted,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if(isOverdue) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
                 )
             }
         }

@@ -28,17 +28,15 @@ fun NavGraph(backStack : NavBackStack<NavKey>) {
             }
 
             entry<AddTask> { screen ->
-                AddEditTaskScreen(listId = screen.listId)
+                AddEditTaskScreen(listId = screen.listId, backStack = backStack)
             }
 
             entry<TaskDetail> { screen ->
-                /* Xử lý sau */
-                TaskDetailScreen(taskId = screen.taskId)
+                TaskDetailScreen(taskId = screen.taskId, backStack = backStack)
             }
 
             entry<EditTask> { screen ->
-                /* Xử lý sau */
-                AddEditTaskScreen(taskId = screen.taskId)
+                AddEditTaskScreen(taskId = screen.taskId, backStack = backStack)
             }
         }
     )
